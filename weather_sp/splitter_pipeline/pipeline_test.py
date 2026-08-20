@@ -19,6 +19,7 @@ from .file_name_utils import OutFileInfo
 from .pipeline import _get_base_input_directory
 from .pipeline import get_output_base_name
 from .pipeline import split_file
+from .pipeline import _validate_output_tokens
 
 
 class PipelineTest(unittest.TestCase):
@@ -44,6 +45,17 @@ class PipelineTest(unittest.TestCase):
             output_template=None,
             formatting='.{shortName}',
             output_dir='out/there').file_name_template, 'out/there/somefile')
+
+    def test_validate_output_tokens(self):
+        # `--output-dir` mode (output_template is None) must not raise.
+        _validate_output_tokens(None, '_{time}_{level}hPa')
+        # `--output-template` mode without bracket tokens must not raise.
+        _validate_output_tokens('splits/{shortName}.grib', '')
+        # Bracket tokens are disallowed in the output file name and formatting.
+        with self.assertRaises(ValueError):
+            _validate_output_tokens('splits/{shortName}[foo].grib', '')
+        with self.assertRaises(ValueError):
+            _validate_output_tokens(None, '_{time}[foo]')
 
     @patch('weather_sp.splitter_pipeline.file_splitters.get_splitter')
     @unittest.skip('bad mocks')

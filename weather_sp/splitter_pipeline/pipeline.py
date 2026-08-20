@@ -85,6 +85,18 @@ def get_output_base_name(input_path: str,
                                 formatting=formatting)
 
 
+def _validate_output_tokens(output_template: t.Optional[str], formatting: str) -> None:
+    """Raise an error if the output file name contains disallowed '[' or ']' tokens.
+
+    In `--output-dir` mode, `output_template` is None (the file name is derived from
+    the output directory and the `--formatting` suffix instead), so only `formatting`
+    needs to be checked in that mode.
+    """
+    output_file_tmpl = os.path.basename(output_template) if output_template else ''
+    if '[' in output_file_tmpl or ']' in output_file_tmpl or '[' in formatting or ']' in formatting:
+        raise ValueError('Tokens `[]` are disallowed in the file output.')
+
+
 def run(argv: t.List[str], save_main_session: bool = True):
     """Main entrypoint & pipeline definition."""
     parser = argparse.ArgumentParser(
@@ -166,9 +178,7 @@ def run(argv: t.List[str], save_main_session: bool = True):
     if not output_template and not output_dir:
         raise ValueError('No output specified')
 
-    output_file_tmpl = os.path.basename(output_template)
-    if '[' in output_file_tmpl or ']' in output_file_tmpl or '[' in formatting or ']' in formatting:
-        raise ValueError('Tokens `[]` are disallowed in the file output.')
+    _validate_output_tokens(output_template, formatting)
 
     logger.debug('input_pattern: %s', input_pattern)
     logger.debug('input_base_dir: %s', input_base_dir)
